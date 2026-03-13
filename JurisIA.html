@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JurisIA — Poder Judicial Mendoza</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root, [data-theme="light"] {
+      --bg: #f0f3f8; --bg2: #e4e9f2; --surface: #ffffff;
+      --navy: #0c1f3a; --blue: #1a4a8a; --blue2: #2260b4;
+      --gold: #c9a84c; --text: #111827; --muted: #4b5e78;
+      --border: #cdd5e3; --msg-ai: #ffffff; --input-bg: #ffffff;
+      --shadow: rgba(0,0,0,.08);
+    }
+    [data-theme="dark"] {
+      --bg: #0d1117; --bg2: #161b22; --surface: #1c2333;
+      --navy: #0d1117; --blue: #2260b4; --blue2: #3477d4;
+      --gold: #e2c472; --text: #e6edf3; --muted: #7d8fa6;
+      --border: #30363d; --msg-ai: #1c2333; --input-bg: #1c2333;
+      --shadow: rgba(0,0,0,.3);
+    }
+
+    html, body { height: 100%; overflow: hidden; }
+    body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; font-size: 14px; transition: background .25s, color .25s; }
+
+    /* TOPBAR */
+    .topbar { background: var(--navy); border-bottom: 2px solid var(--gold); display: flex; align-items: center; padding: 0 24px; height: 52px; flex-shrink: 0; }
+    .brand { display: flex; align-items: center; gap: 10px; margin-right: 28px; }
+    .logo { width: 32px; height: 32px; background: var(--gold); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .brand h1 { font-family: 'Playfair Display', serif; font-size: 18px; color: white; font-weight: 700; line-height: 1; }
+    .brand span { font-size: 9px; color: rgba(255,255,255,.4); text-transform: uppercase; letter-spacing: 1px; display: block; margin-top: 2px; }
+    .nav { display: flex; height: 100%; }
+    .nav-item { padding: 0 16px; height: 100%; display: flex; align-items: center; cursor: pointer; font-size: 11.5px; font-weight: 500; color: rgba(255,255,255,.4); border-bottom: 2px solid transparent; transition: all .15s; text-transform: uppercase; letter-spacing: .4px; margin-bottom: -2px; user-select: none; }
+    .nav-item:hover { color: rgba(255,255,255,.8); }
+    .nav-item.active { color: var(--gold); border-bottom-color: var(--gold); }
+    .topbar-end { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+    .pill { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); border-radius: 20px; padding: 4px 12px; font-size: 11px; color: rgba(255,255,255,.55); white-space: nowrap; }
+    .pill-dot { width: 6px; height: 6px; border-radius: 50%; background: #374151; flex-shrink: 0; transition: background .3s; }
+    .pill-dot.on { background: #22c55e; box-shadow: 0 0 5px #22c55e99; }
+    .icon-btn { width: 32px; height: 32px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .15s; color: rgba(255,255,255,.7); flex-shrink: 0; }
+    .icon-btn:hover { background: rgba(255,255,255,.16); color: white; }
+    .btn-gold { background: var(--gold); color: #0c1f3a; border: none; border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; transition: opacity .15s; }
+    .btn-gold:hover { opacity: .85; }
+
+    /* LAYOUT */
+    .main { display: flex; flex: 1; overflow: hidden; }
+    .panel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+    .panel.active { display: flex; }
+
+    /* CHAT */
+    .chat-wrap { display: flex; flex-direction: column; flex: 1; overflow: hidden; max-width: 860px; margin: 0 auto; width: 100%; }
+    .messages { flex: 1; overflow-y: auto; padding: 28px 20px 12px; display: flex; flex-direction: column; gap: 22px; }
+
+    .welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100%; gap: 12px; text-align: center; padding: 20px; }
+    .welcome-badge { width: 60px; height: 60px; background: linear-gradient(145deg, #0c1f3a, var(--blue2)); border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 28px var(--shadow); margin-bottom: 4px; }
+    .welcome h2 { font-family: 'Playfair Display', serif; font-size: 28px; color: var(--text); }
+    .welcome > p { font-size: 14px; color: var(--muted); max-width: 400px; line-height: 1.75; }
+    .welcome-hint { font-size: 12px; color: var(--muted); opacity: .7; margin-top: 2px; }
+
+    .msg { display: flex; flex-direction: column; gap: 4px; animation: pop .2s ease; }
+    @keyframes pop { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+    .msg.user { align-items: flex-end; }
+    .msg.ai   { align-items: flex-start; }
+    .bubble { max-width: min(680px, 90%); padding: 13px 17px; border-radius: 18px; font-size: 14.5px; line-height: 1.7; }
+    .msg.user .bubble { background: var(--blue); color: white; border-bottom-right-radius: 5px; }
+    .msg.ai .bubble { background: var(--msg-ai); color: var(--text); border: 1px solid var(--border); border-bottom-left-radius: 5px; box-shadow: 0 2px 8px var(--shadow); }
+    .msg-meta { font-size: 11px; color: var(--muted); padding: 0 4px; }
+    .ai-name { font-size: 11px; font-weight: 600; color: var(--gold); text-transform: uppercase; letter-spacing: .6px; }
+
+    .typing { display: flex; gap: 5px; padding: 13px 17px; background: var(--msg-ai); border: 1px solid var(--border); border-radius: 18px; border-bottom-left-radius: 5px; width: fit-content; }
+    .tdot { width: 7px; height: 7px; background: var(--blue); border-radius: 50%; animation: bounce 1.2s infinite; }
+    .tdot:nth-child(2) { animation-delay:.2s; }
+    .tdot:nth-child(3) { animation-delay:.4s; }
+    @keyframes bounce { 0%,60%,100%{transform:translateY(0);opacity:.35;} 30%{transform:translateY(-6px);opacity:1;} }
+
+    /* INPUT */
+    .input-zone { padding: 12px 20px 22px; flex-shrink: 0; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; justify-content: center; }
+    .chip { font-size: 11.5px; padding: 5px 13px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; cursor: pointer; color: var(--muted); transition: all .15s; font-family: inherit; }
+    .chip:hover { background: var(--blue); color: white; border-color: var(--blue); }
+    .input-box { background: var(--input-bg); border: 1.5px solid var(--border); border-radius: 20px; box-shadow: 0 4px 20px var(--shadow); transition: border-color .2s, box-shadow .2s; }
+    .input-box:focus-within { border-color: var(--blue); box-shadow: 0 4px 24px rgba(26,74,138,.15); }
+    .input-box textarea { width: 100%; min-height: 80px; max-height: 200px; padding: 18px 20px 6px; border: none; outline: none; resize: none; font-size: 15px; font-family: inherit; line-height: 1.6; background: transparent; color: var(--text); border-radius: 20px; }
+    .input-box textarea::placeholder { color: var(--muted); }
+    .input-footer { display: flex; align-items: center; justify-content: space-between; padding: 6px 14px 12px; }
+    .input-hint { font-size: 11px; color: var(--muted); opacity: .6; }
+    .send-btn { background: var(--blue); color: white; border: none; border-radius: 12px; padding: 9px 20px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 7px; transition: background .15s; }
+    .send-btn:hover { background: var(--blue2); }
+    .send-btn:disabled { background: var(--border); cursor: not-allowed; color: var(--muted); }
+
+    /* HISTORIAL */
+    .hist-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 24px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .search-box { flex: 1; max-width: 400px; padding: 8px 14px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 13px; font-family: inherit; outline: none; background: var(--bg); color: var(--text); }
+    .search-box:focus { border-color: var(--blue); }
+    .btn-ghost { padding: 7px 14px; border: 1.5px solid var(--border); border-radius: 8px; background: transparent; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; color: var(--muted); transition: all .15s; }
+    .btn-ghost:hover { border-color: #ef4444; color: #ef4444; }
+    .cards-grid { flex: 1; overflow-y: auto; padding: 16px 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; align-content: start; }
+    .causa-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 13px 15px; cursor: pointer; transition: all .15s; border-left: 3px solid transparent; }
+    .causa-card:hover { border-left-color: var(--blue); box-shadow: 0 3px 12px var(--shadow); }
+    .exp-num { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; color: var(--blue); letter-spacing: .5px; }
+    .exp-car { font-size: 13px; color: var(--text); margin: 4px 0; line-height: 1.45; }
+    .exp-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+    .tag { font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+    .t-fuero { background: #dbeafe; color: #1e40af; }
+    .t-fecha  { background: #d1fae5; color: #065f46; }
+    .t-res    { background: #fef3c7; color: #92400e; }
+    [data-theme="dark"] .t-fuero { background: #1e3a5f; color: #93c5fd; }
+    [data-theme="dark"] .t-fecha  { background: #064e3b; color: #6ee7b7; }
+    [data-theme="dark"] .t-res    { background: #451a03; color: #fcd34d; }
+    .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 280px; gap: 10px; color: var(--muted); text-align: center; grid-column: 1 / -1; }
+    .empty svg { opacity: .2; }
+    .empty p { font-size: 14px; line-height: 1.7; }
+
+    /* CONFIG */
+    .config-wrap { flex: 1; overflow-y: auto; padding: 28px 24px; display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+    .config-col { flex: 1; min-width: 280px; max-width: 480px; display: flex; flex-direction: column; gap: 16px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; }
+    .card h3 { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--text); margin-bottom: 6px; }
+    .card > p { font-size: 13px; color: var(--muted); margin-bottom: 0; line-height: 1.7; }
+    .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--bg2); font-size: 13px; }
+    .stat-row:last-child { border: none; }
+    .stat-row span { color: var(--muted); }
+    .bdot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; }
+    .bdot.g { background: #22c55e; }
+    .btn-primary { padding: 10px 20px; background: var(--blue); color: white; border: none; border-radius: 9px; cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; transition: background .15s; }
+    .btn-primary:hover { background: var(--blue2); }
+
+    /* MODALS */
+    .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+    .modal-bg.hidden { display: none; }
+    .modal { background: var(--surface); border-radius: 16px; padding: 26px 30px; width: 560px; max-width: 96vw; box-shadow: 0 24px 64px rgba(0,0,0,.25); border: 1px solid var(--border); }
+    .modal h3 { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--text); margin-bottom: 7px; }
+    .modal > p { font-size: 13px; color: var(--muted); margin-bottom: 14px; line-height: 1.65; }
+    .modal textarea { width: 100%; height: 180px; padding: 11px 13px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 12px; font-family: 'IBM Plex Mono', monospace; resize: none; outline: none; background: var(--bg); color: var(--text); margin-bottom: 12px; }
+    .modal textarea:focus { border-color: var(--blue); }
+    .modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-cancel { padding: 8px 16px; border: 1.5px solid var(--border); background: transparent; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 500; color: var(--muted); }
+    .how-list { display: flex; flex-direction: column; gap: 12px; }
+    .how-item { display: flex; gap: 12px; align-items: flex-start; }
+    .how-n { width: 24px; height: 24px; flex-shrink: 0; background: var(--blue); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; margin-top: 1px; }
+    .how-item p { font-size: 13.5px; color: var(--text); line-height: 1.6; }
+
+    .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(70px); background: var(--navy); color: white; padding: 9px 20px; border-radius: 24px; font-size: 13px; font-weight: 500; transition: transform .3s; z-index: 9999; pointer-events: none; box-shadow: 0 6px 20px rgba(0,0,0,.3); white-space: nowrap; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0c1f3a" stroke-width="2.5">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+          <path d="M2 17l10 5 10-5"/>
+          <path d="M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <div><h1>JurisIA</h1><span>Poder Judicial · Mendoza</span></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active" data-tab="chat">⚖️ Chat</div>
+      <div class="nav-item" data-tab="historial">📁 Historial</div>
+      <div class="nav-item" data-tab="config">⚙️ Config</div>
+    </nav>
+    <div class="topbar-end">
+      <div class="pill">
+        <div class="pill-dot" id="ctxDot"></div>
+        <span id="ctxLabel">Sin causas</span>
+      </div>
+      <button class="icon-btn" onclick="openInstructions()" title="Cómo usar">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </button>
+      <button class="icon-btn" onclick="toggleTheme()" title="Modo oscuro/claro">
+        <svg id="iconMoon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg id="iconSun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
+      <button class="btn-gold" onclick="openPaste()">+ Cargar causas</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- CHAT -->
+    <div class="panel active" id="panel-chat">
+      <div class="chat-wrap">
+        <div class="messages" id="messages">
+          <div class="welcome" id="welcome">
+            <div class="welcome-badge">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                <path d="M2 17l10 5 10-5"/>
+                <path d="M2 12l10 5 10-5"/>
+              </svg>
+            </div>
+            <h2>JurisIA</h2>
+            <p>Asistente de jurisprudencia para el Poder Judicial de Mendoza</p>
+            <p class="welcome-hint">Hacé clic en <strong>"+ Cargar causas"</strong> para empezar</p>
+          </div>
+        </div>
+        <div class="input-zone">
+          <div class="chips" id="chips">
+            <div class="chip" data-q="¿Cuáles son los expedientes de daños por accidente de tránsito?">🚗 Daños tránsito</div>
+            <div class="chip" data-q="Resumí todas las causas con sus resoluciones">📋 Resumen</div>
+            <div class="chip" data-q="¿Qué causas tienen sentencia definitiva?">⚖️ Sentencia definitiva</div>
+            <div class="chip" data-q="¿Cuáles son las causas de procesos de consumo?">🛒 Consumo</div>
+            <div class="chip" data-q="¿Qué causas involucran a la Provincia de Mendoza?">🏛️ Contra Provincia</div>
+          </div>
+          <div class="input-box">
+            <textarea id="chatInput" placeholder="Hacé tu consulta sobre los expedientes cargados..."></textarea>
+            <div class="input-footer">
+              <span class="input-hint">Enter para enviar · Shift+Enter para nueva línea</span>
+              <button class="send-btn" id="sendBtn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                Enviar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORIAL -->
+    <div class="panel" id="panel-historial">
+      <div class="hist-bar">
+        <input type="text" class="search-box" id="searchBox" placeholder="🔍  Buscar por número o carátula..." />
+        <button class="btn-ghost" onclick="clearAll()">Limpiar</button>
+      </div>
+      <div class="cards-grid" id="cardGrid"></div>
+    </div>
+
+    <!-- CONFIG -->
+    <div class="panel" id="panel-config">
+      <div class="config-wrap">
+        <div class="config-col">
+          <div class="card">
+            <h3>🔑 API Key de Claude</h3>
+            <p style="margin-bottom:14px;">Necesitás una API Key de Anthropic. Se guarda en tu navegador y nunca sale de tu dispositivo.</p>
+            <div class="field">
+              <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:6px;">Tu API Key</label>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input type="password" id="apiInput" placeholder="sk-ant-api03-..." autocomplete="off" style="flex:1;padding:10px 13px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;font-family:inherit;outline:none;background:var(--bg);color:var(--text);" />
+                <button onclick="toggleShowKey()" id="showKeyBtn" style="height:40px;padding:0 12px;background:var(--bg2);border:1.5px solid var(--border);border-radius:9px;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);font-family:inherit;white-space:nowrap;">👁 Ver</button>
+              </div>
+              <div id="keyPreview" style="display:none;margin-top:6px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-family:monospace;font-size:11px;color:var(--text);word-break:break-all;line-height:1.6;"></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+              <button class="btn-primary" id="saveBtn">💾 Guardar</button>
+              <span id="saveFb" style="font-size:13px;"></span>
+            </div>
+            <p style="font-size:12px;margin:0;">¿No tenés? Conseguila gratis en:<br><a href="https://console.anthropic.com" target="_blank" style="color:var(--blue);font-weight:600;">→ console.anthropic.com</a></p>
+          </div>
+        </div>
+        <div class="config-col">
+          <div class="card">
+            <h3>📊 Estado</h3>
+            <div class="stat-row"><span>API Key</span><span id="stApi"><span class="bdot r" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#ef4444;margin-right:5px;"></span>No configurada</span></div>
+            <div class="stat-row"><span>Causas en sesión</span><strong id="stSesion">0</strong></div>
+            <div class="stat-row"><span>Causas guardadas</span><strong id="stGuard">0</strong></div>
+          </div>
+          <div class="card">
+            <h3>🎨 Apariencia</h3>
+            <p style="margin-bottom:12px;">Modo claro u oscuro desde el botón 🌙 en la barra superior.</p>
+            <button class="btn-primary" onclick="toggleTheme()" style="width:100%;" id="themeToggleBtn">Activar modo oscuro</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PASTE MODAL -->
+  <div class="modal-bg hidden" id="pasteModal">
+    <div class="modal">
+      <h3>📋 Cargar causas desde Tribunet</h3>
+      <p>Copiá todo el texto de la lista de causas de Tribunet (Ctrl+A → Ctrl+C) y pegalo acá abajo.</p>
+      <textarea id="pasteArea" placeholder="Pegá aquí el texto copiado de Tribunet..."></textarea>
+      <div class="modal-btns">
+        <button class="btn-cancel" onclick="closePaste()">Cancelar</button>
+        <button class="btn-primary" onclick="processPaste()">⚡ Procesar causas</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSTRUCTIONS MODAL -->
+  <div class="modal-bg hidden" id="instrModal">
+    <div class="modal">
+      <h3>📖 Cómo usar JurisIA</h3>
+      <p>Seguí estos pasos para consultar expedientes con IA:</p>
+      <div class="how-list">
+        <div class="how-item"><div class="how-n">1</div><p>Iniciá sesión en <strong>tribunet.com.ar</strong> normalmente</p></div>
+        <div class="how-item"><div class="how-n">2</div><p>En la lista de causas, seleccioná todo (<strong>Ctrl+A</strong>) y copiá (<strong>Ctrl+C</strong>)</p></div>
+        <div class="how-item"><div class="how-n">3</div><p>Volvé a JurisIA y hacé clic en <strong>"+ Cargar causas"</strong>, pegá el texto y procesalo</p></div>
+        <div class="how-item"><div class="how-n">4</div><p>¡Listo! Escribí tu consulta y presioná <strong>Enviar</strong></p></div>
+      </div>
+      <div class="modal-btns" style="margin-top:16px;">
+        <button class="btn-primary" onclick="closeInstructions()">Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+let causas = [], historial = [], apiKey = null, isLoading = false, isDark = false;
+
+function init() {
+  try {
+    apiKey = localStorage.getItem("jurisai_key") || null;
+    historial = JSON.parse(localStorage.getItem("jurisai_hist") || "[]");
+    isDark = localStorage.getItem("jurisai_theme") === "dark";
+  } catch(e) {}
+  if (isDark) applyTheme("dark");
+  setupNav(); setupChat(); setupHistorial(); setupConfig();
+  updateUI(); renderCards();
+}
+
+// Theme
+function toggleTheme() {
+  isDark = !isDark;
+  applyTheme(isDark ? 'dark' : 'light');
+  try { localStorage.setItem('jurisai_theme', isDark ? 'dark' : 'light'); } catch(e) {}
+}
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  const moon = document.getElementById('iconMoon'), sun = document.getElementById('iconSun');
+  const btn = document.getElementById('themeToggleBtn');
+  if (t === 'dark') { moon.style.display = 'none'; sun.style.display = ''; if(btn) btn.textContent = 'Activar modo claro'; }
+  else { moon.style.display = ''; sun.style.display = 'none'; if(btn) btn.textContent = 'Activar modo oscuro'; }
+}
+
+// Nav
+function switchTab(n) {
+  document.querySelectorAll('.nav-item').forEach(x => x.classList.toggle('active', x.dataset.tab === n));
+  document.querySelectorAll('.panel').forEach(x => x.classList.toggle('active', x.id === `panel-${n}`));
+  if (n === 'historial') renderCards();
+  if (n === 'config') updateStats();
+}
+function setupNav() {
+  document.querySelectorAll('.nav-item').forEach(x => x.addEventListener('click', () => switchTab(x.dataset.tab)));
+}
+
+// UI
+function updateUI() {
+  const dot = document.getElementById('ctxDot'), lbl = document.getElementById('ctxLabel');
+  if (causas.length) { dot.classList.add('on'); lbl.textContent = `${causas.length} causas`; }
+  else { dot.classList.remove('on'); lbl.textContent = 'Sin causas'; }
+  updateStats();
+}
+function updateStats() {
+  document.getElementById("stSesion").textContent = causas.length;
+  document.getElementById("stGuard").textContent = historial.length;
+  const stApi = document.getElementById("stApi");
+  if (stApi) stApi.innerHTML = apiKey
+    ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#22c55e;margin-right:5px;"></span>Configurada`
+    : `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#ef4444;margin-right:5px;"></span>No configurada`;
+}
+
+function setupConfig() {
+  if (apiKey) {
+    const inp = document.getElementById("apiInput");
+    if (inp) { inp.value = apiKey; }
+    const fb = document.getElementById("saveFb");
+    if (fb) fb.innerHTML = `<span style="color:#22c55e">✓ Guardada</span>`;
+  }
+  const btn = document.getElementById("saveBtn");
+  if (btn) btn.addEventListener("click", () => {
+    const k = document.getElementById("apiInput").value.trim();
+    if (!k || !k.startsWith("sk-ant")) { toast("API Key inválida — debe empezar con sk-ant..."); return; }
+    try { localStorage.setItem("jurisai_key", k); } catch(e) {}
+    apiKey = k;
+    document.getElementById("saveFb").innerHTML = `<span style="color:#22c55e;font-weight:600;">✓ Guardada</span>`;
+    updateUI(); toast("✅ API Key guardada. ¡Ya podés consultar!");
+  });
+}
+
+function toggleShowKey() {
+  const inp = document.getElementById("apiInput");
+  const preview = document.getElementById("keyPreview");
+  const btn = document.getElementById("showKeyBtn");
+  const isHidden = inp.type === "password";
+  if (isHidden) {
+    inp.type = "text"; btn.textContent = "🙈 Ocultar";
+    const val = inp.value.trim();
+    if (val) {
+      preview.style.display = "block";
+      preview.textContent = val;
+      const valid = val.startsWith("sk-ant");
+      preview.style.borderColor = valid ? "#22c55e" : "#ef4444";
+      preview.style.color = valid ? "#166534" : "#991b1b";
+    }
+  } else {
+    inp.type = "password"; btn.textContent = "👁 Ver";
+    preview.style.display = "none";
+  }
+}
+
+// Paste modal
+function openPaste() { document.getElementById('pasteModal').classList.remove('hidden'); setTimeout(() => document.getElementById('pasteArea').focus(), 80); }
+function closePaste() { document.getElementById('pasteModal').classList.add('hidden'); document.getElementById('pasteArea').value = ''; }
+document.getElementById('pasteModal').addEventListener('click', e => { if (e.target === e.currentTarget) closePaste(); });
+
+function processPaste() {
+  const text = document.getElementById('pasteArea').value.trim();
+  if (!text) { toast('Pegá texto antes de procesar'); return; }
+  const extracted = extractCausas(text);
+  if (!extracted.length) { toast('No se encontraron expedientes. Copiá toda la lista de Tribunet.'); return; }
+  causas = extracted;
+  extracted.forEach(c => { if (!historial.find(h => h.numero === c.numero)) historial.unshift(c); });
+  try { localStorage.setItem('jurisai_hist', JSON.stringify(historial.slice(0, 300))); } catch(e) {}
+  closePaste(); updateUI(); renderCards();
+  toast(`✓ ${extracted.length} causas cargadas`);
+}
+
+function extractCausas(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const result = [], seen = new Set();
+  let fuero = 'Poder Judicial Mendoza', fecha = new Date().toLocaleDateString('es-AR');
+  for (const line of lines) {
+    const hdr = line.match(/^(.+?)\s*[-–]\s*(\d{1,2}\/\d{1,2}\/\d{4})/);
+    if (hdr && !line.match(/\d{7,9}/)) { fuero = hdr[1].trim(); fecha = hdr[2]; continue; }
+    const nm = line.match(/\b(\d{7,9})\b/);
+    if (!nm) continue;
+    const numero = nm[1];
+    if (seen.has(numero)) continue;
+    seen.add(numero);
+    const parts = line.split(/\s{3,}|\t/);
+    const resolucion = parts.length > 1 ? parts[parts.length - 1].trim() : '';
+    let caratula = line.replace(/^\d+\.\s*/, '').replace(numero, '').replace(resolucion, '').replace(/Digital\s*-\s*/i, '').replace(/\s{2,}/g, ' ').trim();
+    if (caratula.length < 5) caratula = line.replace(/^\d+\.\s*/, '').trim();
+    result.push({ numero, caratula, resolucion, fuero, fecha, addedAt: new Date().toISOString() });
+  }
+  return result;
+}
+
+// Instructions modal
+function openInstructions() { document.getElementById('instrModal').classList.remove('hidden'); }
+function closeInstructions() { document.getElementById('instrModal').classList.add('hidden'); }
+document.getElementById('instrModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeInstructions(); });
+
+// Chat
+function setupChat() {
+  const inp = document.getElementById('chatInput');
+  document.getElementById('sendBtn').addEventListener('click', send);
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+  inp.addEventListener('input', () => { inp.style.height = 'auto'; inp.style.height = Math.min(inp.scrollHeight, 200) + 'px'; });
+  document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => { inp.value = c.dataset.q; send(); }));
+}
+
+async function send() {
+  if (isLoading) return;
+  const inp = document.getElementById('chatInput');
+  const q = inp.value.trim();
+  if (!q) return;
+  if (!apiKey) { toast("Configurá tu API Key en ⚙️ Config"); switchTab("config"); return; }
+  const ctx = causas.length > 0 ? causas : historial.slice(0, 30);
+  if (!ctx.length) { toast('Cargá causas primero con "+ Cargar causas"'); return; }
+
+  document.getElementById('welcome').style.display = 'none';
+  document.getElementById('chips').style.display = 'none';
+  addMsg('user', q);
+  inp.value = ''; inp.style.height = 'auto';
+
+  const tid = addTyping();
+  isLoading = true; document.getElementById('sendBtn').disabled = true;
+
+  try {
+    const ctxText = ctx.map(c =>
+      `Expediente: ${c.numero}\nCarátula: ${c.caratula}\nFuero: ${c.fuero}\nFecha: ${c.fecha}\nResolución: ${c.resolucion || 'No especificada'}`
+    ).join('\n\n---\n\n');
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey || '',
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1200,
+        system: 'Sos un asistente jurídico especializado en jurisprudencia de Mendoza, Argentina. Respondé en español rioplatense de forma precisa y clara. Citá siempre el número de expediente cuando mencionás una causa específica.',
+        messages: [{ role: 'user', content: `Causas del Poder Judicial de Mendoza:\n\n${ctxText}\n\nConsulta: ${q}` }]
+      })
+    });
+
+    const data = await res.json();
+    removeTyping(tid);
+    if (!res.ok) throw new Error(data.error?.message || `Error ${res.status}`);
+    addMsg('ai', data.content[0].text);
+  } catch(err) {
+    removeTyping(tid);
+    addMsg('ai', `❌ ${err.message}`);
+  } finally {
+    isLoading = false; document.getElementById('sendBtn').disabled = false;
+  }
+}
+
+function addMsg(role, text) {
+  const box = document.getElementById('messages');
+  const time = new Date().toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  if (role === 'ai') {
+    div.innerHTML = `<div class="ai-name">⚖️ JurisIA</div><div class="bubble">${fmt(text)}</div><div class="msg-meta">${time}</div>`;
+  } else {
+    div.innerHTML = `<div class="bubble">${esc(text)}</div><div class="msg-meta">${time}</div>`;
+  }
+  box.appendChild(div); box.scrollTop = box.scrollHeight;
+}
+function fmt(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>')
+    .replace(/`([^`]+)`/g,'<code style="background:var(--bg2);padding:1px 5px;border-radius:3px;font-family:monospace;font-size:12px;">$1</code>')
+    .replace(/\n/g,'<br>');
+}
+function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+function addTyping() {
+  const box = document.getElementById('messages');
+  const id = 'tp' + Date.now();
+  const div = document.createElement('div');
+  div.id = id; div.className = 'msg ai';
+  div.innerHTML = `<div class="ai-name">⚖️ JurisIA</div><div class="typing"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>`;
+  box.appendChild(div); box.scrollTop = box.scrollHeight;
+  return id;
+}
+function removeTyping(id) { document.getElementById(id)?.remove(); }
+
+// Historial
+function setupHistorial() {
+  document.getElementById('searchBox').addEventListener('input', e => renderCards(e.target.value));
+}
+function renderCards(filter = '') {
+  const grid = document.getElementById('cardGrid');
+  const src = [...causas, ...historial.filter(h => !causas.find(c => c.numero === h.numero))];
+  const list = filter ? src.filter(c => c.numero?.includes(filter) || c.caratula?.toLowerCase().includes(filter.toLowerCase())) : src;
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>${filter ? 'Sin resultados.' : 'No hay causas aún.<br>Usá "+ Cargar causas".'}</p></div>`;
+    return;
+  }
+  grid.innerHTML = list.slice(0, 200).map(c => `
+    <div class="causa-card" data-num="${c.numero}">
+      <div class="exp-num">${c.numero}</div>
+      <div class="exp-car">${esc(c.caratula || 'Sin carátula')}</div>
+      <div class="exp-tags">
+        ${c.fuero ? `<span class="tag t-fuero">${trunc(c.fuero,30)}</span>` : ''}
+        ${c.fecha ? `<span class="tag t-fecha">${c.fecha}</span>` : ''}
+        ${c.resolucion ? `<span class="tag t-res">${trunc(c.resolucion,25)}</span>` : ''}
+      </div>
+    </div>`).join('');
+  grid.querySelectorAll('.causa-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const c = [...causas, ...historial].find(x => x.numero === card.dataset.num);
+      if (!c) return;
+      switchTab('chat');
+      document.getElementById('chatInput').value = `Contame sobre el expediente ${c.numero}: ${c.caratula}`;
+      if (!causas.find(x => x.numero === c.numero)) { causas = [c, ...causas]; updateUI(); }
+    });
+  });
+}
+function clearAll() {
+  if (!confirm('¿Limpiar todo el historial?')) return;
+  historial = []; causas = [];
+  try { localStorage.removeItem('jurisai_hist'); } catch(e) {}
+  updateUI(); renderCards(); toast('Historial limpiado');
+}
+
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
+function trunc(s, n) { return s && s.length > n ? s.slice(0, n) + '…' : s; }
+
+init();
+</script>
+</body>
+</html>
